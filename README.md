@@ -3,6 +3,8 @@
 A comprehensive guide to setting up a scalable and highly available three-tier web architecture in AWS.
 
 ## Architecture Overview
+![image](https://github.com/user-attachments/assets/1547a1e0-6783-4170-a0d7-4a4d871a1973)
+
 
 This project implements a three-tier architecture where:
 - A public-facing Application Load Balancer forwards client traffic to web tier EC2 instances
