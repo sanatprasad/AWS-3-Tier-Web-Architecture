@@ -11,6 +11,65 @@ This project implements a three-tier architecture where:
 - The web tier runs Nginx web servers serving a React.js website and redirects API calls to the application tier's internal load balancer
 - The internal load balancer forwards traffic to the application tier (Node.js), which processes data in an Aurora MySQL Multi-AZ Database
 
+  Network Flow Diagram
+mermaidCopygraph TD
+    Internet((Internet)) --> ELB[External Load Balancer]
+    subgraph Public Subnets
+        ELB --> |Port 80| WebTier[Web Tier EC2s<br/>Nginx + React.js]
+    end
+    
+    subgraph Private App Subnets
+        WebTier --> |Port 80| ILB[Internal Load Balancer]
+        ILB --> |Port 4000| AppTier[App Tier EC2s<br/>Node.js]
+    end
+    
+    subgraph Private DB Subnets
+        AppTier --> |Port 3306| DB[(Aurora MySQL<br/>Multi-AZ)]
+    end
+    
+    subgraph NAT
+        WebTier --> NATGW[NAT Gateway]
+        AppTier --> NATGW
+        NATGW --> Internet
+    end
+    
+    subgraph Security Groups
+        SG1[ELB SG<br/>Inbound: 80 from 0.0.0.0/0]
+        SG2[Web Tier SG<br/>Inbound: 80 from ELB SG]
+        SG3[Internal LB SG<br/>Inbound: 80 from Web Tier SG]
+        SG4[App Tier SG<br/>Inbound: 4000 from Internal LB SG]
+        SG5[DB SG<br/>Inbound: 3306 from App Tier SG]
+    end
+Network Flow Details
+
+Client to Web Tier:
+
+Client requests hit the External Load Balancer
+Traffic flows through port 80 (HTTP)
+ELB distributes requests across Web Tier EC2 instances
+
+
+Web Tier to App Tier:
+
+Web servers forward API requests to Internal Load Balancer
+Communication happens over port 80
+Internal LB distributes requests across App Tier EC2 instances
+App servers process requests on port 4000
+
+
+App Tier to Database:
+
+App servers communicate with Aurora MySQL
+Database connections use port 3306
+Multi-AZ deployment ensures high availability
+
+
+Outbound Internet Access:
+
+Private subnet resources (Web and App tiers) use NAT Gateway
+NAT Gateway provides secure outbound internet access
+Located in public subnet with route to Internet Gateway
+
 ### Key Features
 
 - Load Balancing for even traffic distribution
