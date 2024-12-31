@@ -14,14 +14,14 @@ This project implements a three-tier architecture where:
  
 ## Network Flow - AWS Three-Tier Architecture
 1. Entry Point Flow
-CopyUser Request → Route 53 → CloudFront → External ALB
+User Request → Route 53 → CloudFront → External ALB
 
 Route 53 handles DNS resolution
 CloudFront delivers static content and forwards dynamic requests
 External ALB distributes traffic to web servers
 
 2. Web Tier Flow (Public Subnets)
-CopyExternal ALB → Web Servers → Internal ALB
+External ALB → Web Servers → Internal ALB
 
 Web servers host Nginx + React.js application
 Located in public subnets of each AZ
@@ -29,7 +29,7 @@ Uses NAT Gateway for outbound internet access
 Forwards API requests to Internal ALB
 
 3. Application Tier Flow (Private Subnets)
-CopyInternal ALB → Application Servers → Database
+Internal ALB → Application Servers → Database
 
 App servers run Node.js on port 4000
 Located in private subnets
@@ -37,7 +37,7 @@ Processes business logic and database operations
 Auto-scales based on demand
 
 4. Database Tier Flow (Private Subnets)
-CopyPrimary DB (AZ-1a) ⟷ Replica DB (AZ-1b)
+Primary DB (AZ-1a) ⟷ Replica DB (AZ-1b)
 
 Aurora MySQL in Multi-AZ configuration
 Synchronous replication between AZs
@@ -45,7 +45,7 @@ Automatic failover capability
 No direct internet access
 
 5. Monitoring Flow
-CopyResources → CloudWatch → SNS → Users
+Resources → CloudWatch → SNS → Users
 VPC Flow Logs → S3 Bucket
 API Activities → CloudTrail
 
