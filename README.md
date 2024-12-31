@@ -11,71 +11,50 @@ This project implements a three-tier architecture where:
 - The web tier runs Nginx web servers serving a React.js website and redirects API calls to the application tier's internal load balancer
 - The internal load balancer forwards traffic to the application tier (Node.js), which processes data in an Aurora MySQL Multi-AZ Database
 
-  Network Flow Diagram
-mermaidCopygraph TD
-    Internet((Internet)) --> ELB[External Load Balancer]
-    subgraph Public Subnets
-        ELB --> |Port 80| WebTier[Web Tier EC2s<br/>Nginx + React.js]
-    end
-    
-    subgraph Private App Subnets
-        WebTier --> |Port 80| ILB[Internal Load Balancer]
-        ILB --> |Port 4000| AppTier[App Tier EC2s<br/>Node.js]
-    end
-    
-    subgraph Private DB Subnets
-        AppTier --> |Port 3306| DB[(Aurora MySQL<br/>Multi-AZ)]
-    end
-    
-    subgraph NAT
-        WebTier --> NATGW[NAT Gateway]
-        AppTier --> NATGW
-        NATGW --> Internet
-    end
-    
-    subgraph Security Groups
-        SG1[ELB SG<br/>Inbound: 80 from 0.0.0.0/0]
-        SG2[Web Tier SG<br/>Inbound: 80 from ELB SG]
-        SG3[Internal LB SG<br/>Inbound: 80 from Web Tier SG]
-        SG4[App Tier SG<br/>Inbound: 4000 from Internal LB SG]
-        SG5[DB SG<br/>Inbound: 3306 from App Tier SG]
-    end
-Network Flow Details
+ 
+## Network Flow - AWS Three-Tier Architecture
+1. Entry Point Flow
+CopyUser Request → Route 53 → CloudFront → External ALB
 
-Client to Web Tier:
+Route 53 handles DNS resolution
+CloudFront delivers static content and forwards dynamic requests
+External ALB distributes traffic to web servers
 
-Client requests hit the External Load Balancer
-Traffic flows through port 80 (HTTP)
-ELB distributes requests across Web Tier EC2 instances
+2. Web Tier Flow (Public Subnets)
+CopyExternal ALB → Web Servers → Internal ALB
 
+Web servers host Nginx + React.js application
+Located in public subnets of each AZ
+Uses NAT Gateway for outbound internet access
+Forwards API requests to Internal ALB
 
-Web Tier to App Tier:
+3. Application Tier Flow (Private Subnets)
+CopyInternal ALB → Application Servers → Database
 
-Web servers forward API requests to Internal Load Balancer
-Communication happens over port 80
-Internal LB distributes requests across App Tier EC2 instances
-App servers process requests on port 4000
+App servers run Node.js on port 4000
+Located in private subnets
+Processes business logic and database operations
+Auto-scales based on demand
 
+4. Database Tier Flow (Private Subnets)
+CopyPrimary DB (AZ-1a) ⟷ Replica DB (AZ-1b)
 
-App Tier to Database:
+Aurora MySQL in Multi-AZ configuration
+Synchronous replication between AZs
+Automatic failover capability
+No direct internet access
 
-App servers communicate with Aurora MySQL
-Database connections use port 3306
-Multi-AZ deployment ensures high availability
+5. Monitoring Flow
+CopyResources → CloudWatch → SNS → Users
+VPC Flow Logs → S3 Bucket
+API Activities → CloudTrail
 
+6. High Availability
 
-Outbound Internet Access:
-
-Private subnet resources (Web and App tiers) use NAT Gateway
-NAT Gateway provides secure outbound internet access
-Located in public subnet with route to Internet Gateway
-
-### Key Features
-
-- Load Balancing for even traffic distribution
-- Health Checks for instance monitoring
-- Autoscaling Groups for dynamic scaling based on traffic
-- Multi-AZ deployment for high availability
+Resources deployed across two AZs (1a and 1b)
+Auto-scaling groups in each tier
+Multi-AZ database with automatic failover
+Redundant NAT Gateways per AZ
 
 ## Implementation Steps
 
@@ -223,16 +202,3 @@ Enable CloudTrail for API and resource tracking
   - Supports multiple protocols
   - Integrates with monitoring
 
-## Best Practices
-
-- Follow AWS security best practices for IAM policies
-- Implement comprehensive resource tagging
-- Refer to AWS documentation for detailed service configurations
-
-## Contributing
-
-Please read the contribution guidelines before submitting pull requests.
-
-## License
-
-[Add your license information here]
