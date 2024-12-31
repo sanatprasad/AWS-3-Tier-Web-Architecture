@@ -11,52 +11,47 @@ This project implements a three-tier architecture where:
 - The web tier runs Nginx web servers serving a React.js website and redirects API calls to the application tier's internal load balancer
 - The internal load balancer forwards traffic to the application tier (Node.js), which processes data in an Aurora MySQL Multi-AZ Database
 
- 
-## Network Flow - AWS Three-Tier Architecture
-1. Entry Point Flow
-User Request → Route 53 → CloudFront → External ALB
+# AWS Three-Tier Architecture with Network Flow
 
-Route 53 handles DNS resolution
-CloudFront delivers static content and forwards dynamic requests
-External ALB distributes traffic to web servers
+## Entry Point Flow
+- **User Request** → **Route 53** → **CloudFront** → **External ALB**
+  - **Route 53** handles DNS resolution.
+  - **CloudFront** delivers static content and forwards dynamic requests.
+  - **External ALB** (Application Load Balancer) distributes traffic to the web servers.
 
-2. Web Tier Flow (Public Subnets)
-External ALB → Web Servers → Internal ALB
+## Web Tier Flow (Public Subnets)
+- **External ALB** → **Web Servers** → **Internal ALB**
+  - Web servers host **Nginx** and **React.js** application.
+  - Located in **public subnets** of each Availability Zone (AZ).
+  - Web servers use **NAT Gateway** for outbound internet access.
+  - Web servers forward **API requests** to the **Internal ALB**.
 
-Web servers host Nginx + React.js application
-Located in public subnets of each AZ
-Uses NAT Gateway for outbound internet access
-Forwards API requests to Internal ALB
+## Application Tier Flow (Private Subnets)
+- **Internal ALB** → **Application Servers** → **Database**
+  - Application servers run **Node.js** on port **4000**.
+  - Located in **private subnets**.
+  - Process **business logic** and **database operations**.
+  - Application tier auto-scales based on demand.
 
-3. Application Tier Flow (Private Subnets)
-Internal ALB → Application Servers → Database
+## Database Tier Flow (Private Subnets)
+- **Primary DB (AZ-1a)** ⟷ **Replica DB (AZ-1b)**
+  - **Aurora MySQL** in **Multi-AZ** configuration.
+  - **Synchronous replication** between Availability Zones (AZs).
+  - **Automatic failover** capability.
+  - **No direct internet access** for the database.
 
-App servers run Node.js on port 4000
-Located in private subnets
-Processes business logic and database operations
-Auto-scales based on demand
+## Monitoring Flow
+- **Resources** → **CloudWatch** → **SNS** → **Users**
+  - **VPC Flow Logs** are stored in **S3 Bucket**.
+  - **API Activities** are monitored through **CloudTrail**.
 
-4. Database Tier Flow (Private Subnets)
-Primary DB (AZ-1a) ⟷ Replica DB (AZ-1b)
-
-Aurora MySQL in Multi-AZ configuration
-Synchronous replication between AZs
-Automatic failover capability
-No direct internet access
-
-5. Monitoring Flow
-Resources → CloudWatch → SNS → Users
-VPC Flow Logs → S3 Bucket
-API Activities → CloudTrail
-
-6. High Availability
-
-Resources deployed across two AZs (1a and 1b)
-Auto-scaling groups in each tier
-Multi-AZ database with automatic failover
-Redundant NAT Gateways per AZ
-
-## Implementation Steps
+## High Availability
+- Resources deployed across **two AZs (1a and 1b)**.
+- **Auto-scaling groups** are configured in each tier.
+- **Multi-AZ database** with automatic failover.
+- **Redundant NAT Gateways** per AZ for fault tolerance.
+  
+# Implementation Steps
 
 ### 1. Code Setup
 1. Clone the repository
